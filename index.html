@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYDRALTA — Simulador de Secciones Hidráulicas</title>
+    <style>
+        :root {
+            --nav-bg: #12284c;
+            --nav-accent: #f59e0b;
+            --primary: #1d4ed8;
+            --primary-light: #eff6ff;
+            --primary-border: #3b82f6;
+            --bg: #f4f6f9;
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --water: #bae6fd;
+            --water-stroke: #0284c7;
+            --success: #059669;
+            --danger: #dc2626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        /* Top Dark Blue Header */
+        .top-bar {
+            background-color: var(--nav-bg);
+            color: #ffffff;
+            padding: 0.75rem 2rem;
+            border-bottom: 3px solid var(--nav-accent);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand {
+            font-weight: 800;
+            font-size: 1.15rem;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+        }
+
+        /* Sub Navigation Tabs */
+        .sub-nav {
+            background-color: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 0.85rem 0.25rem;
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            font-weight: 700;
+            border-bottom-color: var(--primary);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 1.5rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #0f172a;
+        }
+
+        /* Catalog Accordion Box */
+        .panel {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+
+        .catalog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            color: var(--nav-bg);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .catalog-header span.toggle-icon {
+            margin-right: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .catalog-body {
+            margin-top: 1.25rem;
+        }
+
+        .catalog-body.collapsed {
+            display: none;
+        }
+
+        .category-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .category-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--nav-bg);
+            margin-bottom: 0.6rem;
+        }
+
+        .shapes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+            gap: 0.65rem;
+        }
+
+        .shape-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.65rem 0.4rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 98px;
+        }
+
+        .shape-card:hover {
+            border-color: var(--primary-border);
+            background-color: #f8fafc;
+        }
+
+        .shape-card.selected {
+            border: 2px solid var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .shape-card svg {
+            width: 58px;
+            height: 44px;
+            margin-bottom: 0.4rem;
+        }
+
+        .shape-name {
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.2;
+        }
+
+        .shape-card.selected .shape-name {
+            font-weight: 700;
+            color: var(--nav-bg);
+        }
+
+        /* Simulator Workspace Layout */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-heading {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--nav-bg);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.9rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        input, select {
+            padding: 0.5rem 0.65rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            background-color: #fff;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.15);
+        }
+
+        .btn-calc {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.65rem 1.25rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .btn-calc:hover {
+            background-color: #1e40af;
+        }
+
+        /* Canvas Preview */
+        .preview-box {
+            background-color: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        #sectionCanvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Results KPIs */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+
+        .kpi-card {
+            background-color: #f8fafc;
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--primary);
+            border-radius: 6px;
+            padding: 0.65rem 0.85rem;
+        }
+
+        .kpi-card.highlight {
+            background-color: var(--primary-light);
+            border-left-color: var(--nav-accent);
+        }
+
+        .kpi-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--nav-bg);
+            margin-top: 0.1rem;
+        }
+
+        .kpi-unit {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .regime-badge {
+            display: inline-block;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .regime-sub { background: #dcfce7; color: #166534; }
+        .regime-crit { background: #fef3c7; color: #92400e; }
+        .regime-sup { background: #fee2e2; color: #991b1b; }
+
+        /* Tab Views */
+        .tab-view {
+            display: none;
+        }
+        .tab-view.active {
+            display: block;
+        }
+
+        /* Chart & Comparison Tables */
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        table.data-table th, table.data-table td {
+            border: 1px solid var(--border);
+            padding: 0.6rem 0.75rem;
+            text-align: right;
+        }
+        table.data-table th:first-child, table.data-table td:first-child {
+            text-align: left;
+        }
+        table.data-table th {
+            background-color: #f1f5f9;
+            color: var(--nav-bg);
+            font-weight: 700;
+        }
+
+        .coord-textarea {
+            width: 100%;
+            font-family: monospace;
+            font-size: 0.85rem;
+            padding: 0.5rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            resize: vertical;
+        }
+
+        @media print {
+            .top-bar, .sub-nav, .no-print { display: none !important; }
+            .panel { box-shadow: none; border: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="top-bar">
+        <div class="brand">HYDRALTA</div>
+        <div class="subtitle">Secciones hidráulicas avanzadas y complejas. Aplicación 02</div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="sub-nav">
+        <button class="tab-btn" onclick="switchTab('proyecto')">Proyecto</button>
+        <button class="tab-btn active" onclick="switchTab('simulador')">Sección y Simulador</button>
+        <button class="tab-btn" onclick="switchTab('curvas')">Curvas Hidráulicas (y vs Q)</button>
+        <button class="tab-btn" onclick="switchTab('comparacion')">Comparación Guardada</button>
+        <button class="tab-btn" onclick="switchTab('memoria')">Memoria de Cálculo</button>
+    </nav>
+
+    <main class="container">
+
+        <!-- TAB: PROYECTO -->
+        <div id="tab-proyecto" class="tab-view">
+            <h1 class="page-title">Datos del Proyecto</h1>
+            <div class="panel">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre del Proyecto</label>
+                        <input type="text" id="projName" value="Colector Pluvial / Canal Principal" oninput="updateReport()">
+                    </div>
+                    <div class="form-group">
+                        <label>Tramo / Identificador</label>
+                        <input type="text" id="projTramo" value="Tramo KM 0+000 - KM 0+450" oninput="updateReport()">
+                    </div>
+                    <div class="form-group">
+                        <label>Ingeniero / Responsable</label>
+                        <input type="text" id="projAuthor" value="Área de Ingeniería Hidráulica" oninput="updateReport()">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="projDate" oninput="updateReport()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SIMULADOR PRINCIPAL -->
+        <div id="tab-simulador" class="tab-view active">
+            <h1 class="page-title">Sección</h1>
+
+            <!-- Catálogo de Formas -->
+            <div class="panel">
+                <div class="catalog-header" onclick="toggleCatalog()">
+                    <div>
+                        <span class="toggle-icon" id="catalogArrow">▼</span>
+                        <span>Catálogo de secciones hidráulicas. Actual: <strong id="currentShapeLabel">Trapezoidal</strong></span>
+                    </div>
+                    <span style="font-size: 0.78rem; color: var(--primary); font-weight: 500;">Clic para mostrar/ocultar</span>
+                </div>
+
+                <div class="catalog-body" id="catalogBody">
+                    <!-- Categoría 1: Canales abiertos básicos -->
+                    <div class="category-group">
+                        <div class="category-title">Canales abiertos básicos</div>
+                        <div class="shapes-grid" id="grid-abiertos"></div>
+                    </div>
+
+                    <!-- Categoría 2: Secciones cerradas / Lámina -->
+                    <div class="category-group">
+                        <div class="category-title">Secciones cerradas y conductos a lámina libre</div>
+                        <div class="shapes-grid" id="grid-cerradas"></div>
+                    </div>
+
+                    <!-- Categoría 3: Secciones especiales y compuestas -->
+                    <div class="category-group" style="margin-bottom: 0;">
+                        <div class="category-title">Secciones especiales, compuestas y libre</div>
+                        <div class="shapes-grid" id="grid-especiales"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Área de Trabajo: Parámetros + Resultados en tiempo real -->
+            <div class="workspace">
+                <!-- Columna Izquierda: Datos Geométricos e Hidráulicos -->
+                <div class="panel">
+                    <div class="section-heading">
+                        <span>1. Geometría y Datos Hidráulicos</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Fórmula de Manning</span>
+                    </div>
+
+                    <div id="dynamicInputs" class="form-grid">
+                        <!-- Generado dinámicamente según sección -->
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid var(--border); margin: 1.1rem 0;">
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Tirante de agua y (m)</label>
+                            <input type="number" id="inputY" step="0.01" min="0.001" value="0.85" oninput="calculate()">
+                        </div>
+                        <div class="form-group">
+                            <label>Pendiente longitudinal S₀ (m/m)</label>
+                            <input type="number" id="inputS" step="0.0001" min="0.00001" value="0.0025" oninput="calculate()">
+                        </div>
+                        <div class="form-group">
+                            <label>Rugosidad de Manning (n)</label>
+                            <input type="number" id="inputN" step="0.001" min="0.005" value="0.014" oninput="calculate()">
+                        </div>
+                        <div class="form-group">
+                            <label>Material de referencia (n)</label>
+                            <select id="materialPreset" onchange="applyMaterialPreset()">
+                                <option value="0.014">Concreto liso / acabado (0.014)</option>
+                                <option value="0.011">PVC / HDPE liso (0.011)</option>
+                                <option value="0.013">Concreto estándar / alcantarilla (0.013)</option>
+                                <option value="0.017">Mampostería de piedra (0.017)</option>
+                                <option value="0.022">Canal en tierra limpio (0.022)</option>
+                                <option value="0.030">Canal natural con vegetación (0.030)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                        <button class="btn-calc" onclick="calculate()">Recalcular Hidráulica</button>
+                        <button class="btn-calc" style="background-color: var(--nav-bg);" onclick="saveComparison()">+ Guardar en Comparación</button>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Visualización y Resultados -->
+                <div class="panel">
+                    <div class="section-heading">
+                        <span>2. Vista Previa y Resultados</span>
+                        <span id="regimeBadge" class="regime-badge regime-sub">Flujo Subcrítico</span>
+                    </div>
+
+                    <div class="preview-box">
+                        <canvas id="sectionCanvas" width="440" height="220"></canvas>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;" id="canvasCaption">
+                            Nivel de lámina libre representado en azul
+                        </div>
+                    </div>
+
+                    <div class="kpi-grid">
+                        <div class="kpi-card highlight">
+                            <div class="kpi-label">Caudal (Q)</div>
+                            <div class="kpi-value"><span id="resQ">0.000</span> <span class="kpi-unit">m³/s</span></div>
+                        </div>
+                        <div class="kpi-card highlight">
+                            <div class="kpi-label">Velocidad Media (V)</div>
+                            <div class="kpi-value"><span id="resV">0.00</span> <span class="kpi-unit">m/s</span></div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Área Hidráulica (A)</div>
+                            <div class="kpi-value"><span id="resA">0.000</span> <span class="kpi-unit">m²</span></div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Perímetro Mojado (P)</div>
+                            <div class="kpi-value"><span id="resP">0.000</span> <span class="kpi-unit">m</span></div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Radio Hidráulico (R)</div>
+                            <div class="kpi-value"><span id="resR">0.000</span> <span class="kpi-unit">m</span></div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Espejo de Agua (T)</div>
+                            <div class="kpi-value"><span id="resT">0.000</span> <span class="kpi-unit">m</span></div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Número de Froude (Fr)</div>
+                            <div class="kpi-value"><span id="resFr">0.00</span> <span class="kpi-unit">adim.</span></div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Energía Específica (E)</div>
+                            <div class="kpi-value"><span id="resE">0.000</span> <span class="kpi-unit">m</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CURVAS HIDRÁULICAS -->
+        <div id="tab-curvas" class="tab-view">
+            <h1 class="page-title">Curvas de Relación Tirante - Caudal / Velocidad</h1>
+            <div class="panel">
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Comportamiento hidráulico de la sección <strong id="curveSectionName">Trapezoidal</strong> variando el tirante desde 10% hasta 100% de su altura máxima.
+                </p>
+                <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+                    <canvas id="curveCanvas" width="760" height="300" style="border: 1px solid var(--border); border-radius: 6px; max-width: 100%;"></canvas>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Relación y/H (%)</th>
+                                <th>Tirante y (m)</th>
+                                <th>Área A (m²)</th>
+                                <th>Radio R (m)</th>
+                                <th>Velocidad V (m/s)</th>
+                                <th>Caudal Q (m³/s)</th>
+                                <th>Froude (Fr)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="curveTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: COMPARACIÓN -->
+        <div id="tab-comparacion" class="tab-view">
+            <h1 class="page-title">Comparación de Alternativas Evaluadas</h1>
+            <div class="panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <span style="font-size: 0.88rem; color: var(--text-muted);">Guarda distintas configuraciones desde el simulador para compararlas lado a lado.</span>
+                    <button onclick="clearComparison()" style="background: #fee2e2; color: #991b1b; border: none; padding: 0.45rem 0.85rem; border-radius: 5px; font-weight: 600; cursor: pointer;">Limpiar Tabla</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Sección</th>
+                                <th>Tirante y (m)</th>
+                                <th>Área (m²)</th>
+                                <th>Perímetro (m)</th>
+                                <th>Radio H. (m)</th>
+                                <th>Velocidad (m/s)</th>
+                                <th>Caudal Q (m³/s)</th>
+                                <th>Froude</th>
+                            </tr>
+                        </thead>
+                        <tbody id="compTableBody">
+                            <tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Aún no hay simulaciones guardadas. Usa el botón "+ Guardar en Comparación" en el simulador.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: MEMORIA -->
+        <div id="tab-memoria" class="tab-view">
+            <h1 class="page-title">Memoria de Cálculo Hidráulico</h1>
+            <div class="panel" id="reportContent">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--nav-bg); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <h2 style="color: var(--nav-bg); font-size: 1.25rem;" id="repProjName">Colector Pluvial / Canal Principal</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);" id="repTramo">Tramo KM 0+000 - KM 0+450</p>
+                    </div>
+                    <button class="no-print" onclick="window.print()" style="background: var(--primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 5px; font-weight: 600; cursor: pointer;">Imprimir / Guardar PDF</button>
+                </div>
+
+                <div id="reportBody" style="font-size: 0.9rem; line-height: 1.7;"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Definición del catálogo de secciones inspiradas en HYDRALTA
+        const SECTIONS = [
+            // Canales abiertos básicos
+            {
+                id: 'trapezoidal',
+                name: 'Trapezoidal',
+                category: 'abiertos',
+                svg: `<svg viewBox="0 0 60 44"><path d="M12 24 L48 24 L42 36 L18 36 Z" fill="#bae6fd"/><path d="M8 12 L18 36 L42 36 L52 12" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'b', label: 'Base menor b (m)', val: 1.2, step: 0.1 },
+                    { id: 'z', label: 'Talud lateral z (H:V)', val: 1.5, step: 0.1 },
+                    { id: 'H', label: 'Altura total canal H (m)', val: 1.5, step: 0.1 }
+                ]
+            },
+            {
+                id: 'rectangular',
+                name: 'Rectangular',
+                category: 'abiertos',
+                svg: `<svg viewBox="0 0 60 44"><rect x="14" y="22" width="32" height="14" fill="#bae6fd"/><path d="M14 10 L14 36 L46 36 L46 10" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'b', label: 'Ancho de solera b (m)', val: 1.5, step: 0.1 },
+                    { id: 'H', label: 'Altura total canal H (m)', val: 1.5, step: 0.1 }
+                ]
+            },
+            {
+                id: 'triangular',
+                name: 'Triangular',
+                category: 'abiertos',
+                svg: `<svg viewBox="0 0 60 44"><polygon points="18,24 42,24 30,36" fill="#bae6fd"/><polyline points="10,16 30,36 50,16" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'z', label: 'Talud lateral z (H:V)', val: 1.5, step: 0.1 },
+                    { id: 'H', label: 'Altura total canal H (m)', val: 1.2, step: 0.1 }
+                ]
+            },
+            {
+                id: 'parabolica',
+                name: 'Parabólica',
+                category: 'abiertos',
+                svg: `<svg viewBox="0 0 60 44"><path d="M16 24 Q30 44 44 24 Z" fill="#bae6fd"/><path d="M12 14 Q30 46 48 14" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'Tmax', label: 'Ancho superior T₀ (m)', val: 2.0, step: 0.1 },
+                    { id: 'H', label: 'Altura total H (m)', val: 1.2, step: 0.1 }
+                ]
+            },
+            {
+                id: 'semicircular',
+                name: 'Semicircular',
+                category: 'abiertos',
+                svg: `<svg viewBox="0 0 60 44"><path d="M15 24 A15 15 0 0 0 45 24 Z" fill="#bae6fd"/><path d="M14 18 A16 16 0 0 0 46 18" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'D', label: 'Diámetro D (m)', val: 1.6, step: 0.1 }
+                ]
+            },
+
+            // Secciones cerradas
+            {
+                id: 'circular',
+                name: 'Circular',
+                category: 'cerradas',
+                svg: `<svg viewBox="0 0 60 44"><defs><clipPath id="c1"><circle cx="30" cy="22" r="14"/></clipPath></defs><rect x="14" y="22" width="32" height="16" fill="#bae6fd" clip-path="url(#c1)"/><circle cx="30" cy="22" r="14" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'D', label: 'Diámetro interior D (m)', val: 1.2, step: 0.05 }
+                ]
+            },
+            {
+                id: 'ovalada',
+                name: 'Ovalada (Ovoide)',
+                category: 'cerradas',
+                svg: `<svg viewBox="0 0 60 44"><defs><clipPath id="c2"><rect x="20" y="8" width="20" height="28" rx="10"/></clipPath></defs><rect x="18" y="22" width="24" height="16" fill="#bae6fd" clip-path="url(#c2)"/><rect x="20" y="8" width="20" height="28" rx="10" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'D', label: 'Ancho máximo D (m)', val: 1.0, step: 0.05 },
+                    { id: 'H', label: 'Altura total H (m)', val: 1.5, step: 0.05 }
+                ]
+            },
+            {
+                id: 'herradura',
+                name: 'Herradura / Bóveda',
+                category: 'cerradas',
+                svg: `<svg viewBox="0 0 60 44"><defs><clipPath id="c3"><path d="M16 24 A14 14 0 0 1 44 24 L44 35 L16 35 Z"/></clipPath></defs><rect x="14" y="22" width="32" height="15" fill="#bae6fd" clip-path="url(#c3)"/><path d="M16 24 A14 14 0 0 1 44 24 L44 35 L16 35 Z" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'B', label: 'Ancho base B (m)', val: 1.4, step: 0.1 },
+                    { id: 'H', label: 'Altura total H (m)', val: 1.4, step: 0.1 }
+                ]
+            },
+            {
+                id: 'rectangular_cerrada',
+                name: 'Rectangular cerrada',
+                category: 'cerradas',
+                svg: `<svg viewBox="0 0 60 44"><rect x="16" y="22" width="28" height="13" fill="#bae6fd"/><rect x="16" y="10" width="28" height="25" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'b', label: 'Ancho interior b (m)', val: 1.5, step: 0.1 },
+                    { id: 'H', label: 'Altura interior H (m)', val: 1.2, step: 0.1 }
+                ]
+            },
+            {
+                id: 'cuadrada',
+                name: 'Cuadrada (Marco)',
+                category: 'cerradas',
+                svg: `<svg viewBox="0 0 60 44"><rect x="18" y="22" width="24" height="13" fill="#bae6fd"/><rect x="18" y="10" width="24" height="25" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'L', label: 'Lado interior L (m)', val: 1.2, step: 0.1 }
+                ]
+            },
+            {
+                id: 'trapezoidal_cerrada',
+                name: 'Trapezoidal cerrada',
+                category: 'cerradas',
+                svg: `<svg viewBox="0 0 60 44"><polygon points="15,23 45,23 48,35 12,35" fill="#bae6fd"/><polygon points="18,11 42,11 48,35 12,35" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'b', label: 'Base inferior b (m)', val: 1.6, step: 0.1 },
+                    { id: 'Bsup', label: 'Base superior B (m)', val: 1.0, step: 0.1 },
+                    { id: 'H', label: 'Altura total H (m)', val: 1.2, step: 0.1 }
+                ]
+            },
+
+            // Especiales y compuestas
+            {
+                id: 'rect_fondo_semi',
+                name: 'Rectángulo fondo semicircular',
+                category: 'especiales',
+                svg: `<svg viewBox="0 0 60 44"><path d="M18 22 L42 22 L42 25 A12 12 0 0 1 18 25 Z" fill="#bae6fd"/><path d="M18 10 L18 25 A12 12 0 0 0 42 25 L42 10" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'D', label: 'Ancho / Diámetro D (m)', val: 1.2, step: 0.1 },
+                    { id: 'H', label: 'Altura total H (m)', val: 1.5, step: 0.1 }
+                ]
+            },
+            {
+                id: 'compuesto_bermas',
+                name: 'Canal compuesto con bermas',
+                category: 'especiales',
+                svg: `<svg viewBox="0 0 60 44"><polygon points="12,24 48,24 44,29 38,29 35,36 25,36 22,29 16,29" fill="#bae6fd"/><polyline points="8,18 16,29 22,29 25,36 35,36 38,29 44,29 52,18" fill="none" stroke="#334155" stroke-width="1.8"/></svg>`,
+                params: [
+                    { id: 'b1', label: 'Base cauce central b₁ (m)', val: 1.0, step: 0.1 },
+                    { id: 'h1', label: 'Prof. cauce central h₁ (m)', val: 0.5, step: 0.05 },
+                    { id: 'bBerma', label: 'Ancho cada berma (m)', val: 0.8, step: 0.1 },
+                    { id: 'z', label: 'Talud exterior z (H:V)', val: 1.5, step: 0.1 }
+                ]
+            },
+            {
+                id: 'libre_coordenadas',
+                name: 'Sección libre por coordenadas',
+                category: 'especiales',
+                svg: `<svg viewBox="0 0 60 44"><polyline points="12,14 21,34 30,22 39,34 48,14" fill="none" stroke="#1d4ed8" stroke-width="2"/><circle cx="12" cy="14" r="2" fill="#1d4ed8"/><circle cx="30" cy="22" r="2" fill="#1d4ed8"/><circle cx="48" cy="14" r="2" fill="#1d4ed8"/></svg>`,
+                params: [
+                    { id: 'coords', label: 'Coordenadas X,Y (una por línea, m)', type: 'textarea', val: '0, 1.5
+0.5, 0.4
+1.2, 0.0
+2.2, 0.0
+2.8, 0.5
+3.5, 1.5' }
+                ]
+            }
+        ];
+
+        let currentSection = SECTIONS[0];
+        let savedComparisons = [];
+        let lastResults = null;
+
+        // Inicialización
+        window.onload = () => {
+            document.getElementById('projDate').valueAsDate = new Date();
+            renderCatalog();
+            selectSection('trapezoidal');
+        };
+
+        function toggleCatalog() {
+            const body = document.getElementById('catalogBody');
+            const arrow = document.getElementById('catalogArrow');
+            body.classList.toggle('collapsed');
+            arrow.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            if (tabId === 'curvas') generateCurves();
+            if (tabId === 'memoria') updateReport();
+        }
+
+        function renderCatalog() {
+            const grids = {
+                abiertos: document.getElementById('grid-abiertos'),
+                cerradas: document.getElementById('grid-cerradas'),
+                especiales: document.getElementById('grid-especiales')
+            };
+
+            SECTIONS.forEach(sec => {
+                const card = document.createElement('div');
+                card.className = 'shape-card';
+                card.id = 'card-' + sec.id;
+                card.onclick = () => selectSection(sec.id);
+                card.innerHTML = `${sec.svg}<div class="shape-name">${sec.name}</div>`;
+                grids[sec.category].appendChild(card);
+            });
+        }
+
+        function selectSection(id) {
+            currentSection = SECTIONS.find(s => s.id === id);
+            document.querySelectorAll('.shape-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById('card-' + id).classList.add('selected');
+            document.getElementById('currentShapeLabel').textContent = currentSection.name;
+
+            const container = document.getElementById('dynamicInputs');
+            container.innerHTML = '';
+
+            currentSection.params.forEach(p => {
+                const div = document.createElement('div');
+                div.className = p.type === 'textarea' ? 'form-group full' : 'form-group';
+                if (p.type === 'textarea') {
+                    div.innerHTML = `
+                        <label>${p.label}</label>
+                        <textarea id="param_${p.id}" rows="4" class="coord-textarea" oninput="calculate()">${p.val}</textarea>
+                    `;
+                } else {
+                    div.innerHTML = `
+                        <label>${p.label}</label>
+                        <input type="number" id="param_${p.id}" value="${p.val}" step="${p.step || 0.1}" min="0" oninput="calculate()">
+                    `;
+                }
+                container.appendChild(div);
+            });
+
+            calculate();
+        }
+
+        function applyMaterialPreset() {
+            const val = document.getElementById('materialPreset').value;
+            document.getElementById('inputN').value = val;
+            calculate();
+        }
+
+        function getParamValues() {
+            const vals = {};
+            currentSection.params.forEach(p => {
+                const el = document.getElementById('param_' + p.id);
+                vals[p.id] = p.type === 'textarea' ? el.value : (parseFloat(el.value) || 0);
+            });
+            return vals;
+        }
+
+        // Parsear polilínea de coordenadas X, Y
+        function parseCoordinates(text) {
+            const lines = text.trim().split('
+');
+            const pts = [];
+            for (let line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                    pts.push({ x: parts[0], y: parts[1] });
+                }
+            }
+            return pts.length >= 2 ? pts : [{x:0, y:1}, {x:1, y:0}, {x:2, y:1}];
+        }
+
+        // Motor de cálculo geométrico para cualquier sección mediante integración de franjas/polígonos
+        function getSectionProfile(secId, params) {
+            // Retorna lista de puntos {x, y} del contorno y si es cerrada (roofPts)
+            if (secId === 'trapezoidal') {
+                const { b, z, H } = params;
+                return { pts: [{x: 0, y: H}, {x: z*H, y: 0}, {x: z*H + b, y: 0}, {x: 2*z*H + b, y: H}], closed: false, maxH: H };
+            }
+            if (secId === 'rectangular' || secId === 'rectangular_cerrada') {
+                const { b, H } = params;
+                return { pts: [{x: 0, y: H}, {x: 0, y: 0}, {x: b, y: 0}, {x: b, y: H}], closed: secId === 'rectangular_cerrada', maxH: H };
+            }
+            if (secId === 'cuadrada') {
+                const { L } = params;
+                return { pts: [{x: 0, y: L}, {x: 0, y: 0}, {x: L, y: 0}, {x: L, y: L}], closed: true, maxH: L };
+            }
+            if (secId === 'triangular') {
+                const { z, H } = params;
+                return { pts: [{x: 0, y: H}, {x: z*H, y: 0}, {x: 2*z*H, y: H}], closed: false, maxH: H };
+            }
+            if (secId === 'parabolica') {
+                const { Tmax, H } = params;
+                const pts = [];
+                const steps = 60;
+                for (let i = 0; i <= steps; i++) {
+                    const x = (i / steps) * Tmax;
+                    const dx = x - Tmax / 2;
+                    const y = (4 * H / (Tmax * Tmax)) * dx * dx;
+                    pts.push({ x, y });
+                }
+                return { pts, closed: false, maxH: H };
+            }
+            if (secId === 'semicircular') {
+                const { D } = params;
+                const R = D / 2;
+                const pts = [];
+                const steps = 60;
+                for (let i = 0; i <= steps; i++) {
+                    const theta = Math.PI - (i / steps) * Math.PI;
+                    pts.push({ x: R - R * Math.cos(theta), y: R - R * Math.sin(theta) });
+                }
+                return { pts, closed: false, maxH: R };
+            }
+            if (secId === 'circular') {
+                const { D } = params;
+                const R = D / 2;
+                const pts = [];
+                const steps = 80;
+                for (let i = 0; i <= steps; i++) {
+                    const theta = (i / steps) * Math.PI; // 0 (fondo) a PI (corona)
+                    pts.push({ x: R - R * Math.sin(theta), y: R * (1 - Math.cos(theta)) });
+                }
+                // Polígono cerrado completo para dibujo
+                const full = [];
+                for (let i = 0; i <= 80; i++) {
+                    const a = (i / 80) * 2 * Math.PI;
+                    full.push({ x: R + R * Math.cos(a), y: R + R * Math.sin(a) });
+                }
+                return { fullPoly: full, isSymmetricClosed: true, widthAtY: (y) => 2 * Math.sqrt(Math.max(0, y * (D - y))), maxH: D };
+            }
+            if (secId === 'ovalada') {
+                const { D, H } = params;
+                const rx = D / 2, ry = H / 2;
+                const full = [];
+                for (let i = 0; i <= 80; i++) {
+                    const a = (i / 80) * 2 * Math.PI;
+                    full.push({ x: rx + rx * Math.cos(a), y: ry + ry * Math.sin(a) });
+                }
+                return { fullPoly: full, isSymmetricClosed: true, widthAtY: (y) => 2 * rx * Math.sqrt(Math.max(0, 1 - Math.pow((y - ry)/ry, 2))), maxH: H };
+            }
+            if (secId === 'herradura') {
+                const { B, H } = params;
+                const R = B / 2;
+                const wallH = Math.max(0, H - R);
+                const full = [{x: 0, y: 0}, {x: B, y: 0}, {x: B, y: wallH}];
+                for (let i = 0; i <= 40; i++) {
+                    const a = (i / 40) * Math.PI;
+                    full.push({ x: R + R * Math.cos(a), y: wallH + R * Math.sin(a) });
+                }
+                full.push({x: 0, y: wallH});
+                return {
+                    fullPoly: full,
+                    isSymmetricClosed: true,
+                    widthAtY: (y) => y <= wallH ? B : 2 * Math.sqrt(Math.max(0, R*R - Math.pow(y - wallH, 2))),
+                    maxH: H
+                };
+            }
+            if (secId === 'trapezoidal_cerrada') {
+                const { b, Bsup, H } = params;
+                const diff = (b - Bsup) / 2;
+                const full = [{x: 0, y: 0}, {x: b, y: 0}, {x: b - diff, y: H}, {x: diff, y: H}];
+                return {
+                    fullPoly: full,
+                    isSymmetricClosed: true,
+                    widthAtY: (y) => b - ((b - Bsup) * (y / H)),
+                    maxH: H
+                };
+            }
+            if (secId === 'rect_fondo_semi') {
+                const { D, H } = params;
+                const R = D / 2;
+                const pts = [{x: 0, y: H}];
+                for (let i = 0; i <= 50; i++) {
+                    const a = Math.PI + (i / 50) * Math.PI;
+                    pts.push({ x: R + R * Math.cos(a), y: R + R * Math.sin(a) });
+                }
+                pts.push({x: D, y: H});
+                return { pts, closed: false, maxH: H };
+            }
+            if (secId === 'compuesto_bermas') {
+                const { b1, h1, bBerma, z } = params;
+                const Htot = h1 + 0.8;
+                const z1 = 0.5;
+                const x0 = 0;
+                const x1 = z * 0.8;
+                const x2 = x1 + bBerma;
+                const x3 = x2 + z1 * h1;
+                const x4 = x3 + b1;
+                const x5 = x4 + z1 * h1;
+                const x6 = x5 + bBerma;
+                const x7 = x6 + z * 0.8;
+                return {
+                    pts: [
+                        {x: x0, y: Htot}, {x: x1, y: h1}, {x: x2, y: h1},
+                        {x: x3, y: 0}, {x: x4, y: 0},
+                        {x: x5, y: h1}, {x: x6, y: h1}, {x: x7, y: Htot}
+                    ],
+                    closed: false,
+                    maxH: Htot
+                };
+            }
+            if (secId === 'libre_coordenadas') {
+                const pts = parseCoordinates(params.coords);
+                const minY = Math.min(...pts.map(p => p.y));
+                const normPts = pts.map(p => ({ x: p.x, y: p.y - minY }));
+                const maxH = Math.max(...normPts.map(p => p.y));
+                return { pts: normPts, closed: false, maxH };
+            }
+        }
+
+        // Calcula A, P, T para cualquier perfil dado un tirante y
+        function computeHydraulicsForDepth(profile, yTarget, S, n) {
+            const g = 9.81;
+            const maxH = profile.maxH || 1;
+            const y = Math.min(Math.max(yTarget, 0.0001), maxH);
+
+            let A = 0, P = 0, T = 0;
+
+            if (profile.isSymmetricClosed) {
+                const slices = 400;
+                const dy = y / slices;
+                let prevW = profile.widthAtY(0);
+                P += prevW; // base si existe
+
+                for (let i = 1; i <= slices; i++) {
+                    const yi = i * dy;
+                    const w = profile.widthAtY(yi);
+                    A += 0.5 * (prevW + w) * dy;
+                    const dx = Math.abs(w - prevW) / 2;
+                    P += 2 * Math.hypot(dx, dy);
+                    prevW = w;
+                }
+                T = profile.widthAtY(y);
+                if (y >= maxH * 0.999) {
+                    P += T; // techo mojado a tubo lleno
+                    T = 0.0001;
+                }
+            } else {
+                // Integración sobre polilínea abierta o marco rectangular
+                const pts = profile.pts;
+                for (let i = 0; i < pts.length - 1; i++) {
+                    const p1 = pts[i], p2 = pts[i+1];
+                    const dx = p2.x - p1.x;
+                    const dy = p2.y - p1.y;
+                    const segLen = Math.hypot(dx, dy);
+
+                    if (p1.y <= y && p2.y <= y) {
+                        P += segLen;
+                        A += ((y - p1.y) + (y - p2.y)) * 0.5 * dx;
+                    } else if (p1.y < y && p2.y > y) {
+                        const t = (y - p1.y) / (p2.y - p1.y);
+                        const xInt = p1.x + t * dx;
+                        P += Math.hypot(xInt - p1.x, y - p1.y);
+                        A += (y - p1.y) * 0.5 * (xInt - p1.x);
+                    } else if (p1.y > y && p2.y < y) {
+                        const t = (y - p2.y) / (p1.y - p2.y);
+                        const xInt = p2.x - t * dx;
+                        P += Math.hypot(p2.x - xInt, y - p2.y);
+                        A += (y - p2.y) * 0.5 * (p2.x - xInt);
+                    }
+                }
+                // Espejo de agua T: suma de intersecciones horizontales
+                let xInts = [];
+                for (let i = 0; i < pts.length - 1; i++) {
+                    const p1 = pts[i], p2 = pts[i+1];
+                    if ((p1.y <= y && p2.y > y) || (p1.y > y && p2.y <= y)) {
+                        const t = (y - p1.y) / (p2.y - p1.y);
+                        xInts.push(p1.x + t * (p2.x - p1.x));
+                    }
+                }
+                xInts.sort((a, b) => a - b);
+                for (let i = 0; i < xInts.length - 1; i += 2) {
+                    T += (xInts[i+1] - xInts[i]);
+                }
+                if (profile.closed && y >= maxH * 0.999) {
+                    P += T;
+                }
+            }
+
+            A = Math.max(A, 1e-6);
+            P = Math.max(P, 1e-6);
+            T = Math.max(T, 1e-4);
+
+            const R = A / P;
+            const V = (1 / n) * Math.pow(R, 2/3) * Math.pow(S, 0.5);
+            const Q = A * V;
+            const Dh = A / T; // Profundidad hidráulica
+            const Fr = V / Math.sqrt(g * Dh);
+            const E = y + (V * V) / (2 * g);
+
+            return { y, A, P, R, T, V, Q, Fr, E, maxH };
+        }
+
+        function calculate() {
+            const params = getParamValues();
+            const yInput = parseFloat(document.getElementById('inputY').value) || 0.1;
+            const S = parseFloat(document.getElementById('inputS').value) || 0.001;
+            const n = parseFloat(document.getElementById('inputN').value) || 0.014;
+
+            const profile = getSectionProfile(currentSection.id, params);
+            const res = computeHydraulicsForDepth(profile, yInput, S, n);
+            lastResults = { ...res, sectionName: currentSection.name, S, n, params };
+
+            document.getElementById('resQ').textContent = res.Q.toFixed(4);
+            document.getElementById('resV').textContent = res.V.toFixed(2);
+            document.getElementById('resA').textContent = res.A.toFixed(3);
+            document.getElementById('resP').textContent = res.P.toFixed(3);
+            document.getElementById('resR').textContent = res.R.toFixed(3);
+            document.getElementById('resT').textContent = res.T.toFixed(3);
+            document.getElementById('resFr').textContent = res.Fr.toFixed(2);
+            document.getElementById('resE').textContent = res.E.toFixed(3);
+
+            const badge = document.getElementById('regimeBadge');
+            if (res.Fr < 0.98) {
+                badge.textContent = 'Flujo Subcrítico (Tranquilo)';
+                badge.className = 'regime-badge regime-sub';
+            } else if (res.Fr <= 1.02) {
+                badge.textContent = 'Flujo Crítico';
+                badge.className = 'regime-badge regime-crit';
+            } else {
+                badge.textContent = 'Flujo Supercrítico (Rápido)';
+                badge.className = 'regime-badge regime-sup';
+            }
+
+            drawSectionPreview(profile, res.y);
+            updateReport();
+        }
+
+        function drawSectionPreview(profile, waterY) {
+            const canvas = document.getElementById('sectionCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const poly = profile.fullPoly || profile.pts;
+            const minX = Math.min(...poly.map(p => p.x));
+            const maxX = Math.max(...poly.map(p => p.x));
+            const minY = Math.min(...poly.map(p => p.y));
+            const maxY = Math.max(...poly.map(p => p.y));
+
+            const spanX = Math.max(maxX - minX, 0.1);
+            const spanY = Math.max(maxY - minY, 0.1);
+
+            const pad = 35;
+            const scale = Math.min((canvas.width - 2*pad) / spanX, (canvas.height - 2*pad) / spanY);
+            const offsetX = (canvas.width - spanX * scale) / 2 - minX * scale;
+            const offsetY = canvas.height - pad + minY * scale;
+
+            const toCx = x => offsetX + x * scale;
+            const toCy = y => offsetY - y * scale;
+
+            // Clip del polígono de la sección para rellenar agua
+            ctx.save();
+            ctx.beginPath();
+            poly.forEach((p, idx) => {
+                if (idx === 0) ctx.moveTo(toCx(p.x), toCy(p.y));
+                else ctx.lineTo(toCx(p.x), toCy(p.y));
+            });
+            ctx.closePath();
+            ctx.clip();
+
+            // Dibujar agua
+            ctx.fillStyle = '#bae6fd';
+            ctx.fillRect(0, toCy(waterY), canvas.width, canvas.height);
+
+            // Línea de superficie libre
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 3]);
+            ctx.beginPath();
+            ctx.moveTo(0, toCy(waterY));
+            ctx.lineTo(canvas.width, toCy(waterY));
+            ctx.stroke();
+            ctx.restore();
+
+            // Dibujar contorno de la estructura
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 2.8;
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            poly.forEach((p, idx) => {
+                if (idx === 0) ctx.moveTo(toCx(p.x), toCy(p.y));
+                else ctx.lineTo(toCx(p.x), toCy(p.y));
+            });
+            if (profile.closed || profile.fullPoly) ctx.closePath();
+            ctx.stroke();
+
+            // Cota de tirante y
+            ctx.fillStyle = '#0369a1';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(`y = ${waterY.toFixed(2)} m`, 12, 20);
+            ctx.fillStyle = '#64748b';
+            ctx.font = '11px sans-serif';
+            ctx.fillText(`H máx = ${maxY.toFixed(2)} m`, canvas.width - 95, 20);
+        }
+
+        function generateCurves() {
+            const params = getParamValues();
+            const S = parseFloat(document.getElementById('inputS').value) || 0.001;
+            const n = parseFloat(document.getElementById('inputN').value) || 0.014;
+            const profile = getSectionProfile(currentSection.id, params);
+
+            document.getElementById('curveSectionName').textContent = currentSection.name;
+            const tbody = document.getElementById('curveTableBody');
+            tbody.innerHTML = '';
+
+            const points = [];
+            for (let pct = 10; pct <= 100; pct += 10) {
+                const y = (pct / 100) * profile.maxH;
+                const r = computeHydraulicsForDepth(profile, y, S, n);
+                points.push({ pct, ...r });
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${pct}%</strong></td>
+                        <td>${r.y.toFixed(3)}</td>
+                        <td>${r.A.toFixed(3)}</td>
+                        <td>${r.R.toFixed(3)}</td>
+                        <td>${r.V.toFixed(2)}</td>
+                        <td><strong>${r.Q.toFixed(4)}</strong></td>
+                        <td>${r.Fr.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            // Dibujar gráfico Q vs y
+            const canvas = document.getElementById('curveCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const padL = 65, padR = 30, padT = 25, padB = 40;
+            const w = canvas.width - padL - padR;
+            const h = canvas.height - padT - padB;
+
+            const maxQ = Math.max(...points.map(p => p.Q)) * 1.1 || 1;
+            const maxY = profile.maxH;
+
+            // Ejes
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(padL, padT);
+            ctx.lineTo(padL, padT + h);
+            ctx.lineTo(padL + w, padT + h);
+            ctx.stroke();
+
+            // Etiquetas
+            ctx.fillStyle = '#475569';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('Tirante y (m)', 10, padT + 10);
+            ctx.fillText('Caudal Q (m³/s)', padL + w / 2 - 35, canvas.height - 10);
+
+            // Curva Q
+            ctx.strokeStyle = '#1d4ed8';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            points.forEach((pt, idx) => {
+                const cx = padL + (pt.Q / maxQ) * w;
+                const cy = padT + h - (pt.y / maxY) * h;
+                if (idx === 0) ctx.moveTo(cx, cy);
+                else ctx.lineTo(cx, cy);
+            });
+            ctx.stroke();
+
+            // Puntos
+            ctx.fillStyle = '#f59e0b';
+            points.forEach(pt => {
+                const cx = padL + (pt.Q / maxQ) * w;
+                const cy = padT + h - (pt.y / maxY) * h;
+                ctx.beginPath();
+                ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function saveComparison() {
+            if (!lastResults) return;
+            savedComparisons.push({ ...lastResults });
+            renderComparisonTable();
+            alert(`Simulación (${lastResults.sectionName}, Q = ${lastResults.Q.toFixed(3)} m³/s) guardada en la pestaña "Comparación Guardada".`);
+        }
+
+        function clearComparison() {
+            savedComparisons = [];
+            renderComparisonTable();
+        }
+
+        function renderComparisonTable() {
+            const tbody = document.getElementById('compTableBody');
+            if (savedComparisons.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Aún no hay simulaciones guardadas.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = savedComparisons.map((item, idx) => `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td><strong>${item.sectionName}</strong></td>
+                    <td>${item.y.toFixed(3)}</td>
+                    <td>${item.A.toFixed(3)}</td>
+                    <td>${item.P.toFixed(3)}</td>
+                    <td>${item.R.toFixed(3)}</td>
+                    <td>${item.V.toFixed(2)}</td>
+                    <td><strong>${item.Q.toFixed(4)}</strong></td>
+                    <td>${item.Fr.toFixed(2)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateReport() {
+            if (!lastResults) return;
+            document.getElementById('repProjName').textContent = document.getElementById('projName').value || 'Proyecto Hidráulico';
+            document.getElementById('repTramo').textContent = `${document.getElementById('projTramo').value} | Responsable: ${document.getElementById('projAuthor').value}`;
+
+            const r = lastResults;
+            document.getElementById('reportBody').innerHTML = `
+                <p><strong>1. Parámetros de Diseño:</strong></p>
+                <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li><strong>Tipo de sección seleccionada:</strong> ${r.sectionName}</li>
+                    <li><strong>Tirante de flujo evaluado (y):</strong> ${r.y.toFixed(3)} m</li>
+                    <li><strong>Pendiente longitudinal (S₀):</strong> ${r.S} m/m</li>
+                    <li><strong>Coeficiente de rugosidad de Manning (n):</strong> ${r.n}</li>
+                </ul>
+                <p><strong>2. Resultados Hidráulicos (Ecuación de Manning: Q = (1/n) · A · R<sup>2/3</sup> · S₀<sup>1/2</sup>):</strong></p>
+                <ul style="margin-left: 1.5rem;">
+                    <li><strong>Área Hidráulica (A):</strong> ${r.A.toFixed(4)} m²</li>
+                    <li><strong>Perímetro Mojado (P):</strong> ${r.P.toFixed(4)} m</li>
+                    <li><strong>Radio Hidráulico (R = A/P):</strong> ${r.R.toFixed(4)} m</li>
+                    <li><strong>Espejo de Agua (T):</strong> ${r.T.toFixed(4)} m</li>
+                    <li><strong>Velocidad Media (V):</strong> ${r.V.toFixed(3)} m/s</li>
+                    <li><strong>Caudal Conducido (Q):</strong> <strong>${r.Q.toFixed(4)} m³/s</strong> (${(r.Q * 1000).toFixed(1)} L/s)</li>
+                    <li><strong>Número de Froude (Fr):</strong> ${r.Fr.toFixed(3)} (${r.Fr < 1 ? 'Régimen Subcrítico' : 'Régimen Supercrítico'})</li>
+                    <li><strong>Energía Específica (E):</strong> ${r.E.toFixed(4)} m</li>
+                </ul>
+            `;
+        }
+    </script>
+</body>
+</html>
